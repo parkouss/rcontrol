@@ -1,6 +1,7 @@
 # -*- coding: utf-8
 import sys
 import threading
+from collections import OrderedDict
 from rcontrol import fs
 
 
@@ -53,6 +54,56 @@ class BaseSession(object):
         return ThreadableTask(fs.copy_file,
                               (self, src, dest_os, dest),
                               dict(chunk_size=chunk_size))
+
+    def close(self):
+        """
+        Close the session.
+        """
+
+
+class SessionManager(OrderedDict):
+    """
+    A specialized OrderedDict that keep sessions instances.
+
+    It can be used like a namespace: ::
+
+      sess_manager.local = LocalSession()
+      # equivalent to:
+      # sess_manager['local'] = LocalSession()
+
+    A session manager is useful because it has a close() method, that
+    will close each registered session. So you can do: ::
+
+      from contextlib import closing
+
+      with closing(SessionManager()) as sessions:
+          # do everything you want, sessions will be closed automatically
+          # after this with block
+
+    Note that this is required on python3, else python may hang.
+    """
+
+    def __setattr__(self, name, value):
+        if isinstance(value, BaseSession):
+            self[name] = value
+        else:
+            self.__dict__[name] = value
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            return OrderedDict.__getattr__(self, name)
+
+    def __delattr__(self, name):
+        try:
+            del self[name]
+        except KeyError:
+            OrderedDict.__delattr__(self, name)
+
+    def close(self):
+        for session in self.values():
+            session.close()
 
 
 class StreamReadersExec(object):

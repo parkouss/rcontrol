@@ -76,13 +76,20 @@ class SshSession(BaseSession):
     A specialized ssh session.
 
     :param ssh_client: an instance of a connected :class:`paramiko.SSHClient`
+    :param close_client: if True, takes ownership over the ssh_client,
+        meaning that it will close it when the session is closed.
     """
-    def __init__(self, ssh_client):
+    def __init__(self, ssh_client, close_client=True):
         self.ssh_client = ssh_client
         self.sftp = ssh_client.open_sftp()
+        self.close_client = close_client
 
     def open(self, filename, mode='r', bufsize=-1):
         return self.sftp.open(filename, mode=mode, bufsize=bufsize)
 
     def execute(self, command, **kwargs):
         return RemoteExec(self.ssh_client, command, **kwargs)
+
+    def close(self):
+        if self.close_client:
+            self.ssh_client.close()

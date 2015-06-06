@@ -4,6 +4,7 @@ import six
 import threading
 from collections import OrderedDict
 from rcontrol import fs
+import abc
 
 
 class TimeoutError(Exception):
@@ -14,10 +15,67 @@ class ExitCodeError(Exception):
     """Raised when the exit code of a command is unexpected"""
 
 
+class Task(object):
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def is_running(self):
+        """
+        Return True if the task is running.
+        """
+
+    @abc.abstractmethod
+    def error(self):
+        """
+        Return an instance of Exception if any, else None.
+        """
+        return None
+
+    def raise_if_error(self):
+        """
+        Check if an error occured and raise it if any.
+        """
+        error = self.error()
+        if error:
+            raise error
+
+    @abc.abstractmethod
+    def wait(self, raise_if_error=True):
+        """
+        Block and wait until the task is finished.
+
+        :param raise_if_error: if True, call :meth:`raise_if_error` at
+            the end.
+        """
+
+
 class BaseSession(object):
     """
     Represent an abstraction of a session on a remote or local machine.
     """
+
+    def __init__(self):
+        self._lock = threading.Lock()  # a lock for tasks access
+        self._tasks = []
+
+    def _register_task(self, task):
+        assert isinstance(task, Task)
+        with self._lock:
+            self._tasks.append(task)
+
+    def _unregister_task(self, task):
+        with self._lock:
+            try:
+                self._tasks.remove(task)
+            except ValueError:
+                pass  # this should not happen
+
+    def tasks(self):
+        """
+        Return a copy of the currently active tasks.
+        """
+        with self._lock:
+            return self._tasks[:]
 
     def open(self, filename, mode='r', bufsize=-1):
         """
@@ -107,7 +165,7 @@ class SessionManager(OrderedDict):
             session.close()
 
 
-class StreamReadersExec(object):
+class StreamReadersExec(Task):
     """
     Base class that execute a command in an asynchronous way.
 
@@ -196,14 +254,6 @@ class StreamReadersExec(object):
                 self.__exit_code != self.__expected_exit_code:
             return ExitCodeError('bad exit code: Got %s' % self.__exit_code)
 
-    def raise_if_error(self):
-        """
-        Check if an error occured and raise it if any.
-        """
-        error = self.error()
-        if error:
-            raise error
-
     def wait(self, raise_if_error=True):
         """
         Block and wait until the command is finished or we got a timeout
@@ -219,7 +269,7 @@ class StreamReadersExec(object):
         return self.__exit_code
 
 
-class ThreadableTask(object):
+class ThreadableTask(Task):
     """
     A task ran in a background thread.
     """

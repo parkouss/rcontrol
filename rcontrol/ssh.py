@@ -80,6 +80,7 @@ class SshSession(BaseSession):
         meaning that it will close it when the session is closed.
     """
     def __init__(self, ssh_client, close_client=True):
+        BaseSession.__init__(self)
         self.ssh_client = ssh_client
         self.sftp = ssh_client.open_sftp()
         self.close_client = close_client

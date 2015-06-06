@@ -53,7 +53,7 @@ class LocalSession(BaseSession):
     A session on the local machine.
     """
     def open(self, filename, mode='r', bufsize=-1):
-        return open(filename, mode=mode, bufsize=bufsize)
+        return open(filename, mode=mode)
 
     def execute(self, command, **kwargs):
         return LocalExec(command, **kwargs)

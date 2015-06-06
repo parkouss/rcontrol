@@ -1,5 +1,6 @@
 # -*- coding: utf-8
 import sys
+import six
 import threading
 from collections import OrderedDict
 from rcontrol import fs
@@ -257,7 +258,10 @@ class ThreadableTask(object):
         Check if an error occured and raise it if any.
         """
         if self.exception:
-            raise self.exception[0], self.exception[1], self.exception[2]
+            if six.PY2:
+                raise (self.exception[0], self.exception[1], self.exception[2])
+            else:
+                raise self.exception[1]
 
     def wait(self, raise_if_error=True):
         """

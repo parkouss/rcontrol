@@ -12,18 +12,28 @@ ideas and contributors to make this tool evolve.
 Basic example: ::
 
   from rcontrol.ssh import SshSession, ssh_client
+  from rcontrol.core import SessionManager
+  from contextlib import closing
 
-  # create session on two hosts
-  bilbo = SshSession(ssh_client('http://bilbo.domain.com', 'user', 'pwd'))
-  nazgul = SshSession(ssh_client('http://nazgul.domain.com', 'user', 'pwd'))
+  def log(task, line):
+      print("%r: %s" % (task, line))
 
-  # run commands in parallel
-  tasks = (bilbo.execute("uname -a && sleep 3"),
-           nazgul.execute("uname -a && sleep 3"))
+  with closing(SessionManager()) as sessions:
+      # create sessions on two hosts
+      sessions.bilbo = SshSession(
+          ssh_client('http://bilbo.domain.com', 'user', 'pwd'))
+      sessions.nazgul = SshSession(
+          ssh_client('http://nazgul.domain.com', 'user', 'pwd'))
 
-  # wait for both commands to finish
-  for task in tasks:
-      task.wait()
+      # run commands in parallel
+      tasks = (sessions.bilbo.execute("uname -a && sleep 3",
+                                      stdout_callback=log),
+               sessions.nazgul.execute("uname -a && sleep 3",
+                                       stdout_callback=log))
+
+      # wait for both commands to finish
+      for task in tasks:
+          task.wait()
 
 This example just show you how **rcontrol** looks like.
 
@@ -48,8 +58,6 @@ What **rcontrol** needs (contributors, you're welcome!)
 * be able to stop (kill) a command (local or remote)
 
 * more file operations (create dirs, recursively copy dirs, remove, ...)
-
-* make it work with python 3
 
 * love
 

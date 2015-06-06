@@ -9,7 +9,9 @@ Unlike **fabric**, it is intended to perform tasks in an asynchronous way.
 Please note that this is under development! I am waiting for feedback,
 ideas and contributors to make this tool evolve.
 
-Basic example: ::
+Basic example:
+
+.. code-block:: python
 
   from rcontrol.ssh import SshSession, ssh_client
   from rcontrol.core import SessionManager

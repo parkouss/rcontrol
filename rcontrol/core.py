@@ -1,18 +1,41 @@
 # -*- coding: utf-8
 import sys
-import six
 import threading
 from collections import OrderedDict
 from rcontrol import fs
 import abc
 
 
-class TimeoutError(Exception):
+class BaseTaskError(Exception):
+    """Raised on a task error"""
+
+
+class TaskError(BaseTaskError):
+    """Raised on a task error"""
+    def __init__(self, session, task, msg):
+        self.session = session
+        self.task = task
+        self.msg = msg
+
+    def __str__(self):
+        return "%s: %s (%s)" % (self.session, self.task, self.msg)
+
+
+class TimeoutError(TaskError):
     """Raise on a timeout error"""
 
 
-class ExitCodeError(Exception):
+class ExitCodeError(TaskError):
     """Raised when the exit code of a command is unexpected"""
+
+
+class TaskErrors(BaseTaskError):
+    """A list of task errors"""
+    def __init__(self, errors):
+        self.errors = errors
+
+    def __str__(self):
+        return '\n'.join(self.errors)
 
 
 class Task(object):
@@ -54,9 +77,10 @@ class BaseSession(object):
     Represent an abstraction of a session on a remote or local machine.
     """
 
-    def __init__(self):
+    def __init__(self, auto_close=True):
         self._lock = threading.Lock()  # a lock for tasks access
         self._tasks = []
+        self.auto_close = auto_close
 
     def _register_task(self, task):
         assert isinstance(task, Task)
@@ -76,6 +100,20 @@ class BaseSession(object):
         """
         with self._lock:
             return self._tasks[:]
+
+    def wait_for_tasks(self, raise_if_error=True):
+        """
+        Wait for the running tasks lauched from this session.
+        """
+        errors = []
+        for task in self.tasks():
+            task.wait(raise_if_error=False)
+            error = task.error()
+            if error:
+                errors.append(error)
+        if raise_if_error and errors:
+            raise TaskErrors(errors)
+        return errors
 
     def open(self, filename, mode='r', bufsize=-1):
         """
@@ -110,17 +148,27 @@ class BaseSession(object):
         :param dest_os: session to copy to
         :param dest: full path of the file to copy in the dest session
         """
-        task = ThreadableTask(fs.copy_file,
+        task = ThreadableTask(self, fs.copy_file,
                               (self, src, dest_os, dest),
-                              dict(chunk_size=chunk_size),
-                              finished_callback=self._unregister_task)
-        self._register_task(task)
+                              dict(chunk_size=chunk_size))
         return task
 
     def close(self):
         """
         Close the session.
         """
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        errors = self.wait_for_tasks(raise_if_error=False)
+        if self.auto_close:
+            self.close()
+        if errors:
+            # TODO: for now, just print errors if any
+            for error in errors:
+                print('ERROR: %s' % error)
 
 
 class SessionManager(OrderedDict):
@@ -163,9 +211,31 @@ class SessionManager(OrderedDict):
         except KeyError:
             OrderedDict.__delattr__(self, name)
 
+    def wait_for_tasks(self, raise_if_error=True):
+        errors = []
+        for session in self.values():
+            errs = session.wait_for_tasks(raise_if_error=False)
+            errors.extend(errs)
+        if raise_if_error and errors:
+            raise TaskErrors(errors)
+        return errors
+
     def close(self):
         for session in self.values():
             session.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        errors = self.wait_for_tasks(raise_if_error=False)
+        for session in self.values():
+            if session.auto_close:
+                session.close()
+        if errors:
+            # TODO: for now, just print errors if any
+            for error in errors:
+                print('ERROR: %s' % error)
 
 
 class StreamReadersExec(Task):
@@ -257,10 +327,11 @@ class StreamReadersExec(Task):
         if self.is_running():
             return None
         if self.__timed_out:
-            return TimeoutError("timeout")
+            return TimeoutError(self.session, self, "timeout")
         if self.__expected_exit_code is not None and \
                 self.__exit_code != self.__expected_exit_code:
-            return ExitCodeError('bad exit code: Got %s' % self.__exit_code)
+            return ExitCodeError(self.session, self,
+                                 'bad exit code: Got %s' % self.__exit_code)
 
     def wait(self, raise_if_error=True):
         """
@@ -281,16 +352,19 @@ class ThreadableTask(Task):
     """
     A task ran in a background thread.
     """
-    def __init__(self, callable, args, kwargs, finished_callback=None):
+    def __init__(self, session, callable, args, kwargs,
+                 finished_callback=None):
         # Set up exception handling
         self.exception = None
+        session._register_task(self)
 
         def wrapper(*args, **kwargs):
             try:
                 callable(*args, **kwargs)
             except BaseException:
-                self.exception = sys.exc_info()
+                self.exception = TaskError(session, self, sys.exc_info()[1])
             finally:
+                session._unregister_task(self)
                 if finished_callback:
                     finished_callback(self)
 
@@ -312,17 +386,7 @@ class ThreadableTask(Task):
         """
         Return an instance of Exception if any, else None.
         """
-        return self.exception[1] if self.exception else None
-
-    def raise_if_error(self):
-        """
-        Check if an error occured and raise it if any.
-        """
-        if self.exception:
-            if six.PY2:
-                raise (self.exception[0], self.exception[1], self.exception[2])
-            else:
-                raise self.exception[1]
+        return self.exception
 
     def wait(self, raise_if_error=True):
         """

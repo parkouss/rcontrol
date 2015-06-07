@@ -110,9 +110,12 @@ class BaseSession(object):
         :param dest_os: session to copy to
         :param dest: full path of the file to copy in the dest session
         """
-        return ThreadableTask(fs.copy_file,
+        task = ThreadableTask(fs.copy_file,
                               (self, src, dest_os, dest),
-                              dict(chunk_size=chunk_size))
+                              dict(chunk_size=chunk_size),
+                              finished_callback=self._unregister_task)
+        self._register_task(task)
+        return task
 
     def close(self):
         """
@@ -172,6 +175,7 @@ class StreamReadersExec(Task):
     It uses an internal stream reader (a subclass of
     :class:`streamreader.StreamsReader`)
 
+    :param session: the session that run this command
     :param reader_class: the :class:`streamreader.StreamsReader` class
         to use
     :param command: the command to execute (a string)
@@ -181,10 +185,13 @@ class StreamReadersExec(Task):
     Other params are passed to the :class:`streamreader.StreamsReader`
     constructor.
     """
-    def __init__(self, reader_class, command, expected_exit_code=0,
+    def __init__(self, session, reader_class, command, expected_exit_code=0,
                  timeout=None, combine_stderr=None, output_timeout=None,
                  finished_callback=None, timeout_callback=None,
                  stdout_callback=None, stderr_callback=None):
+
+        self.session = session
+        self.session._register_task(self)
 
         if combine_stderr is None:
             combine_stderr = not stderr_callback
@@ -224,6 +231,7 @@ class StreamReadersExec(Task):
             self.__timeout_callback(self)
 
     def _on_finished(self):
+        self.session._unregister_task(self)
         if self.__finished_callback:
             self.__finished_callback(self)
 
@@ -273,7 +281,7 @@ class ThreadableTask(Task):
     """
     A task ran in a background thread.
     """
-    def __init__(self, callable, args, kwargs):
+    def __init__(self, callable, args, kwargs, finished_callback=None):
         # Set up exception handling
         self.exception = None
 
@@ -282,6 +290,9 @@ class ThreadableTask(Task):
                 callable(*args, **kwargs)
             except BaseException:
                 self.exception = sys.exc_info()
+            finally:
+                if finished_callback:
+                    finished_callback(self)
 
         # Kick off thread
         name = getattr(callable, '__name__', None)

@@ -29,25 +29,26 @@ class RemoteExec(StreamReadersExec):
     Basically extend a :class:`StreamReadersExec` to pass in a specialized
     stream reader, :class:`ChannelReader`.
 
-    :param ssh_client: an instance of a connected :class:`paramiko.SSHClient`
+    :param session: instance of the :class:`SshSession` responsible of
+        this command execution
     :param command: the command to execute (a string)
     :param kwargs: list of argument passed to the base class constructor
     """
-    def __init__(self, ssh_client, command, **kwargs):
-        StreamReadersExec.__init__(self, ChannelReader, command, **kwargs)
-        self.ssh_client = ssh_client
+    def __init__(self, session, command, **kwargs):
+        StreamReadersExec.__init__(self, session, ChannelReader, command,
+                                   **kwargs)
 
-        transport = self.ssh_client.get_transport()
-        self._session = transport.open_session()
-        self._session.set_combine_stderr(self._combine_stderr)
+        transport = self.session.ssh_client.get_transport()
+        self._ssh_session = transport.open_session()
+        self._ssh_session.set_combine_stderr(self._combine_stderr)
 
-        self._session.exec_command(command)
+        self._ssh_session.exec_command(command)
 
-        self._reader.start(self._session)
+        self._reader.start(self._ssh_session)
 
     def _on_finished(self):
         if not self.timed_out():
-            self._set_exit_code(self._session.recv_exit_status())
+            self._set_exit_code(self._ssh_session.recv_exit_status())
         StreamReadersExec._on_finished(self)
 
 
@@ -89,7 +90,7 @@ class SshSession(BaseSession):
         return self.sftp.open(filename, mode=mode, bufsize=bufsize)
 
     def execute(self, command, **kwargs):
-        return RemoteExec(self.ssh_client, command, **kwargs)
+        return RemoteExec(self, command, **kwargs)
 
     def close(self):
         if self.close_client:

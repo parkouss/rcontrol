@@ -15,12 +15,11 @@ Basic example:
 
   from rcontrol.ssh import SshSession, ssh_client
   from rcontrol.core import SessionManager
-  from contextlib import closing
 
   def log(task, line):
       print("%r: %s" % (task, line))
 
-  with closing(SessionManager()) as sessions:
+  with SessionManager() as sessions:
       # create sessions on two hosts
       sessions.bilbo = SshSession(
           ssh_client('http://bilbo.domain.com', 'user', 'pwd'))
@@ -28,14 +27,8 @@ Basic example:
           ssh_client('http://nazgul.domain.com', 'user', 'pwd'))
 
       # run commands in parallel
-      tasks = (sessions.bilbo.execute("uname -a && sleep 3",
-                                      stdout_callback=log),
-               sessions.nazgul.execute("uname -a && sleep 3",
-                                       stdout_callback=log))
-
-      # wait for both commands to finish
-      for task in tasks:
-          task.wait()
+      sessions.bilbo.execute("uname -a && sleep 3", stdout_callback=log)
+      sessions.nazgul.execute("uname -a && sleep 3", stdout_callback=log)
 
 This example just show you how **rcontrol** looks like.
 

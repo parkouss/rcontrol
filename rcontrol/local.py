@@ -31,11 +31,14 @@ class LocalExec(StreamReadersExec):
     Basically extend a :class:`StreamReadersExec` to pass in a specialized
     stream reader, :class:`ProcessReader`.
 
+    :param session: instance of the :class:`LocalSession` responsible of
+        this command execution
     :param command: the command to execute (a string)
     :param kwargs: list of argument passed to the base class constructor
     """
-    def __init__(self, command, **kwargs):
-        StreamReadersExec.__init__(self, ProcessReader, command, **kwargs)
+    def __init__(self, session, command, **kwargs):
+        StreamReadersExec.__init__(self, session, ProcessReader, command,
+                                   **kwargs)
         stdout = subprocess.PIPE
         stderr = subprocess.STDOUT if self._combine_stderr else subprocess.PIPE
         self._proc = subprocess.Popen(command, shell=True, stdout=stdout,
@@ -56,4 +59,4 @@ class LocalSession(BaseSession):
         return open(filename, mode=mode)
 
     def execute(self, command, **kwargs):
-        return LocalExec(command, **kwargs)
+        return LocalExec(self, command, **kwargs)

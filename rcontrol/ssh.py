@@ -29,25 +29,26 @@ class RemoteExec(StreamReadersExec):
     Basically extend a :class:`StreamReadersExec` to pass in a specialized
     stream reader, :class:`ChannelReader`.
 
-    :param ssh_client: an instance of a connected :class:`paramiko.SSHClient`
+    :param session: instance of the :class:`SshSession` responsible of
+        this command execution
     :param command: the command to execute (a string)
     :param kwargs: list of argument passed to the base class constructor
     """
-    def __init__(self, ssh_client, command, **kwargs):
-        StreamReadersExec.__init__(self, ChannelReader, command, **kwargs)
-        self.ssh_client = ssh_client
+    def __init__(self, session, command, **kwargs):
+        StreamReadersExec.__init__(self, session, ChannelReader, command,
+                                   **kwargs)
 
-        transport = self.ssh_client.get_transport()
-        self._session = transport.open_session()
-        self._session.set_combine_stderr(self._combine_stderr)
+        transport = self.session.ssh_client.get_transport()
+        self._ssh_session = transport.open_session()
+        self._ssh_session.set_combine_stderr(self._combine_stderr)
 
-        self._session.exec_command(command)
+        self._ssh_session.exec_command(command)
 
-        self._reader.start(self._session)
+        self._reader.start(self._ssh_session)
 
     def _on_finished(self):
         if not self.timed_out():
-            self._set_exit_code(self._session.recv_exit_status())
+            self._set_exit_code(self._ssh_session.recv_exit_status())
         StreamReadersExec._on_finished(self)
 
 
@@ -76,20 +77,19 @@ class SshSession(BaseSession):
     A specialized ssh session.
 
     :param ssh_client: an instance of a connected :class:`paramiko.SSHClient`
-    :param close_client: if True, takes ownership over the ssh_client,
-        meaning that it will close it when the session is closed.
+    :param auto_close: if True, automatically close the ssh session when using
+        the 'with' statement.
     """
-    def __init__(self, ssh_client, close_client=True):
+    def __init__(self, ssh_client, auto_close=True):
+        BaseSession.__init__(self, auto_close=auto_close)
         self.ssh_client = ssh_client
         self.sftp = ssh_client.open_sftp()
-        self.close_client = close_client
 
     def open(self, filename, mode='r', bufsize=-1):
         return self.sftp.open(filename, mode=mode, bufsize=bufsize)
 
     def execute(self, command, **kwargs):
-        return RemoteExec(self.ssh_client, command, **kwargs)
+        return RemoteExec(self, command, **kwargs)
 
     def close(self):
-        if self.close_client:
-            self.ssh_client.close()
+        self.ssh_client.close()

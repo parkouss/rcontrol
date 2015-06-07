@@ -1,6 +1,12 @@
 **rcontrol**
 ============
 
+.. image:: https://travis-ci.org/parkouss/rcontrol.svg?branch=master
+    :target: https://travis-ci.org/parkouss/rcontrol
+.. image:: https://coveralls.io/repos/parkouss/rcontrol/badge.svg?branch=master
+  :target: https://coveralls.io/r/parkouss/rcontrol?branch=master
+
+
 **rcontrol** is a python library based on **paramiko** intended to work
 with remote machines via ssh.
 

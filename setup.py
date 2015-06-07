@@ -30,4 +30,6 @@ setup(
     license="GPL 2.0/LGPL 2.1",
     packages=['rcontrol'],
     platforms=['Any'],
+    tests_require=['mock'],
+    test_suite="tests",
 )

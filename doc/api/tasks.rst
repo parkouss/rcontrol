@@ -4,56 +4,63 @@ Tasks
 A task represent an action done locally or on remote hosts. All tasks
 are asynchronous.
 
+.. currentmodule:: rcontrol.core
+
 Abstract Task
 -------------
 
-.. autoclass:: rcontrol.core.Task
+.. autoclass:: Task
   :members:
 
 
 CommandTask
 -----------
 
-.. inheritance-diagram:: rcontrol.core.CommandTask
+.. inheritance-diagram:: CommandTask
 
-.. autoclass:: rcontrol.core.CommandTask
+.. autoclass:: CommandTask
   :members:
-
 
 SshExec
 -------
 
-.. inheritance-diagram:: rcontrol.ssh.SshExec
+.. currentmodule:: rcontrol.ssh
 
-.. autoclass:: rcontrol.ssh.SshExec
+.. inheritance-diagram:: SshExec
+
+.. autoclass:: SshExec
   :members:
 
 
 LocalExec
 ---------
 
-.. inheritance-diagram:: rcontrol.local.LocalExec
+.. currentmodule:: rcontrol.local
 
-.. autoclass:: rcontrol.local.LocalExec
+.. inheritance-diagram:: LocalExec
+
+.. autoclass:: LocalExec
   :members:
 
+
+.. currentmodule:: rcontrol.core
 
 ThreadableTask
 --------------
 
-.. inheritance-diagram:: rcontrol.core.ThreadableTask
+.. inheritance-diagram:: ThreadableTask
 
-.. autoclass:: rcontrol.core.ThreadableTask
+.. autoclass:: ThreadableTask
   :members:
 
 
 Task exceptions
 ---------------
 
-.. autoclass:: rcontrol.core.BaseTaskError
+.. autoclass:: BaseTaskError
 
-.. autoclass:: rcontrol.core.TimeoutError
+.. autoclass:: TimeoutError
 
-.. autoclass:: rcontrol.core.ExitCodeError
+.. autoclass:: ExitCodeError
 
-.. autoclass:: rcontrol.core.TaskErrors
+.. autoclass:: TaskErrors

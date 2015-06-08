@@ -3,29 +3,35 @@ Sessions
 
 A session represent a connection on a remote or local machine.
 
+.. currentmodule:: rcontrol.core
+
 BaseSession
 -----------
 
-.. autoclass:: rcontrol.core.BaseSession
+.. autoclass:: BaseSession
   :members:
 
 
 SshSession
 ----------
 
-.. inheritance-diagram:: rcontrol.ssh.SshSession
+.. currentmodule:: rcontrol.ssh
 
-.. autoclass:: rcontrol.ssh.SshSession
+.. inheritance-diagram:: SshSession
+
+.. autoclass:: SshSession
   :members:
 
 
-.. autofunction:: rcontrol.ssh.ssh_client
+.. autofunction:: ssh_client
 
 
 LocalSession
 ------------
 
-.. inheritance-diagram:: rcontrol.local.LocalSession
+.. currentmodule:: rcontrol.local
 
-.. autoclass:: rcontrol.local.LocalSession
+.. inheritance-diagram:: LocalSession
+
+.. autoclass:: LocalSession
   :members:

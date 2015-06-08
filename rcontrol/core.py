@@ -1,6 +1,7 @@
 # -*- coding: utf-8
 import sys
 import threading
+import six
 from collections import OrderedDict
 from rcontrol import fs
 import abc
@@ -186,6 +187,13 @@ class SessionManager(OrderedDict):
     tasks and close sessions if needed automatically.
     """
 
+    def __setitem__(self, name, value):
+        if not isinstance(name, six.string_types):
+            raise TypeError('key must be an str instance')
+        if not isinstance(value, BaseSession):
+            raise TypeError('only BaseSession instances can be set')
+        OrderedDict.__setitem__(self, name, value)
+
     def __setattr__(self, name, value):
         if isinstance(value, BaseSession):
             self[name] = value
@@ -196,7 +204,7 @@ class SessionManager(OrderedDict):
         try:
             return self[name]
         except KeyError:
-            return OrderedDict.__getattr__(self, name)
+            raise AttributeError('%r does not exists' % name)
 
     def __delattr__(self, name):
         try:

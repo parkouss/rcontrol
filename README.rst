@@ -4,7 +4,11 @@
 .. image:: https://travis-ci.org/parkouss/rcontrol.svg?branch=master
     :target: https://travis-ci.org/parkouss/rcontrol
 .. image:: https://coveralls.io/repos/parkouss/rcontrol/badge.svg?branch=master
-  :target: https://coveralls.io/r/parkouss/rcontrol?branch=master
+    :target: https://coveralls.io/r/parkouss/rcontrol?branch=master
+
+.. image:: https://readthedocs.org/projects/rcontrol/badge/?version=latest
+    :target: https://readthedocs.org/projects/rcontrol/?badge=latest
+    :alt: Documentation Status
 
 
 **rcontrol** is a python library based on **paramiko** intended to work
@@ -36,7 +40,9 @@ Basic example:
       sessions.bilbo.execute("uname -a && sleep 3", stdout_callback=log)
       sessions.nazgul.execute("uname -a && sleep 3", stdout_callback=log)
 
-This example just show you how **rcontrol** looks like.
+This example just show you how **rcontrol** looks like. Look at the
+documentation on http://rcontrol.readthedocs.org/en/latest/ if you're
+interested to see more!
 
 
 What **rcontrol** can do

@@ -1,7 +1,7 @@
 import subprocess
 
 from rcontrol.streamreader import StreamsReader
-from rcontrol.core import StreamReadersExec, BaseSession
+from rcontrol.core import CommandTask, BaseSession
 
 
 class ProcessReader(StreamsReader):
@@ -22,13 +22,13 @@ class ProcessReader(StreamsReader):
         return stdout_reader, stderr_reader
 
 
-class LocalExec(StreamReadersExec):
+class LocalExec(CommandTask):
     """
     Execute a local command.
 
     The execution starts as soon as the object is created.
 
-    Basically extend a :class:`StreamReadersExec` to pass in a specialized
+    Basically extend a :class:`CommandTask` to pass in a specialized
     stream reader, :class:`ProcessReader`.
 
     :param session: instance of the :class:`LocalSession` responsible of
@@ -37,8 +37,7 @@ class LocalExec(StreamReadersExec):
     :param kwargs: list of argument passed to the base class constructor
     """
     def __init__(self, session, command, **kwargs):
-        StreamReadersExec.__init__(self, session, ProcessReader, command,
-                                   **kwargs)
+        CommandTask.__init__(self, session, ProcessReader, command, **kwargs)
         stdout = subprocess.PIPE
         stderr = subprocess.STDOUT if self._combine_stderr else subprocess.PIPE
         self._proc = subprocess.Popen(command, shell=True, stdout=stdout,
@@ -48,7 +47,7 @@ class LocalExec(StreamReadersExec):
     def _on_finished(self):
         if not self.timed_out():
             self._set_exit_code(self._proc.wait())
-        StreamReadersExec._on_finished(self)
+        CommandTask._on_finished(self)
 
 
 class LocalSession(BaseSession):

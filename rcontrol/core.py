@@ -125,11 +125,11 @@ class BaseSession(object):
         """
         Execute a command in an asynchronous way.
 
-        Return an instance of a subclass of a :class:`StreamReadersExec`.
+        Return an instance of a subclass of a :class:`CommandTask`.
 
         :param command: the command to execute (a string)
         :param kwargs: named arguments passed to the constructor of the
-            class:`StreamReadersExec` subclass.
+            class:`CommandTask` subclass.
         """
         raise NotImplementedError
 
@@ -244,7 +244,7 @@ class SessionManager(OrderedDict):
                     print('ERROR: %s' % error)
 
 
-class StreamReadersExec(Task):
+class CommandTask(Task):
     """
     Base class that execute a command in an asynchronous way.
 

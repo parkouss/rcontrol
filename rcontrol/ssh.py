@@ -1,6 +1,6 @@
 import paramiko
 from rcontrol.streamreader import StreamsReader
-from rcontrol.core import StreamReadersExec, BaseSession
+from rcontrol.core import CommandTask, BaseSession
 
 
 class ChannelReader(StreamsReader):
@@ -20,13 +20,13 @@ class ChannelReader(StreamsReader):
         return stdout_reader, stderr_reader
 
 
-class RemoteExec(StreamReadersExec):
+class RemoteExec(CommandTask):
     """
     Execute a remote ssh command.
 
     The execution starts as soon as the object is created.
 
-    Basically extend a :class:`StreamReadersExec` to pass in a specialized
+    Basically extend a :class:`CommandTask` to pass in a specialized
     stream reader, :class:`ChannelReader`.
 
     :param session: instance of the :class:`SshSession` responsible of
@@ -35,8 +35,7 @@ class RemoteExec(StreamReadersExec):
     :param kwargs: list of argument passed to the base class constructor
     """
     def __init__(self, session, command, **kwargs):
-        StreamReadersExec.__init__(self, session, ChannelReader, command,
-                                   **kwargs)
+        CommandTask.__init__(self, session, ChannelReader, command, **kwargs)
 
         transport = self.session.ssh_client.get_transport()
         self._ssh_session = transport.open_session()
@@ -49,7 +48,7 @@ class RemoteExec(StreamReadersExec):
     def _on_finished(self):
         if not self.timed_out():
             self._set_exit_code(self._ssh_session.recv_exit_status())
-        StreamReadersExec._on_finished(self)
+        CommandTask._on_finished(self)
 
 
 def ssh_client(host, username=None, password=None, **kwargs):

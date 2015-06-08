@@ -15,10 +15,8 @@ class TaskError(BaseTaskError):
     def __init__(self, session, task, msg):
         self.session = session
         self.task = task
-        self.msg = msg
-
-    def __str__(self):
-        return "%s: %s (%s)" % (self.session, self.task, self.msg)
+        self.rawmsg = msg
+        BaseTaskError.__init__(self, "%s: %s (%s)" % (session, task, msg))
 
 
 class TimeoutError(TaskError):
@@ -33,9 +31,7 @@ class TaskErrors(BaseTaskError):
     """A list of task errors"""
     def __init__(self, errors):
         self.errors = errors
-
-    def __str__(self):
-        return '\n'.join(self.errors)
+        BaseTaskError.__init__(self, '\n'.join(str(e) for e in self.errors))
 
 
 class Task(object):
@@ -166,9 +162,14 @@ class BaseSession(object):
         if self.auto_close:
             self.close()
         if errors:
-            # TODO: for now, just print errors if any
-            for error in errors:
-                print('ERROR: %s' % error)
+            if value is None:
+                # no exceptions in the with block -> let's raise
+                # the errors
+                raise TaskErrors(errors)
+            else:
+                # TODO: for now, just print errors if any
+                for error in errors:
+                    print('ERROR: %s' % error)
 
 
 class SessionManager(OrderedDict):
@@ -233,9 +234,14 @@ class SessionManager(OrderedDict):
             if session.auto_close:
                 session.close()
         if errors:
-            # TODO: for now, just print errors if any
-            for error in errors:
-                print('ERROR: %s' % error)
+            if value is None:
+                # no exceptions in the with block -> let's raise
+                # the errors
+                raise TaskErrors(errors)
+            else:
+                # TODO: for now, just print errors if any
+                for error in errors:
+                    print('ERROR: %s' % error)
 
 
 class StreamReadersExec(Task):

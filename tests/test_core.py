@@ -62,13 +62,50 @@ class TestBaseSession(unittest.TestCase):
                           [exc1, exc2])
 
     def test_with_context(self):
-        exc = Exception()
-        task = create_task(error=Mock(return_value=exc))
+        task = create_task(error=Mock(return_value=None))
         self.session._register_task(task)
         self.session.close = Mock()
 
         with self.session as s:
             self.assertEquals(self.session, s)
+        # task is finished
+        task.wait.assert_called_once_with(raise_if_error=False)
+        # close has been called
+        self.session.close.assert_called_once_with()
+
+    def test_task_errors_with_context(self):
+        exc = Exception()
+        task = create_task(error=Mock(return_value=exc))
+        self.session._register_task(task)
+        self.session.close = Mock()
+
+        with self.assertRaises(core.TaskErrors) as cm:
+            with self.session as s:
+                self.assertEquals(self.session, s)
+
+        # task is finished
+        task.wait.assert_called_once_with(raise_if_error=False)
+        # close has been called
+        self.session.close.assert_called_once_with()
+        # got a task error at the end
+        self.assertEquals(cm.exception.errors, [exc])
+
+    def test_exception_with_context(self):
+        exc = Exception()
+        task = create_task(error=Mock(return_value=exc))
+        self.session._register_task(task)
+        self.session.close = Mock()
+
+        class MyException(Exception):
+            pass
+
+        # here TaskErrors is not raised since we had an exception
+        # in the with statement. There should be only a print that
+        # notify user from the failure. [TODO test this]
+        with self.assertRaises(MyException) as cm:
+            with self.session as s:
+                raise MyException()
+
         # task is finished
         task.wait.assert_called_once_with(raise_if_error=False)
         # close has been called

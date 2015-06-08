@@ -76,13 +76,16 @@ class SshSession(BaseSession):
     """
     A specialized ssh session.
 
-    :param ssh_client: an instance of a connected :class:`paramiko.SSHClient`
+    Requires an instance of a connected :class:`paramiko.SSHClient`, as
+    returned by :func:`ssh_client`.
+
+    :param client: an instance of a connected :class:`paramiko.SSHClient`
     :param auto_close: if True, automatically close the ssh session when using
         the 'with' statement.
     """
-    def __init__(self, ssh_client, auto_close=True):
+    def __init__(self, client, auto_close=True):
         BaseSession.__init__(self, auto_close=auto_close)
-        self.ssh_client = ssh_client
+        self.ssh_client = client
         self.sftp = ssh_client.open_sftp()
 
     def open(self, filename, mode='r', bufsize=-1):

@@ -102,8 +102,8 @@ class TestBaseSession(unittest.TestCase):
         # here TaskErrors is not raised since we had an exception
         # in the with statement. There should be only a print that
         # notify user from the failure. [TODO test this]
-        with self.assertRaises(MyException) as cm:
-            with self.session as s:
+        with self.assertRaises(MyException):
+            with self.session:
                 raise MyException()
 
         # task is finished

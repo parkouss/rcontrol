@@ -48,6 +48,10 @@ Output: ::
   finished (exit code: 0) !
 
 
+.. seealso::
+
+  :ref:`api-sessions`, :ref:`api-tasks`.
+
 Synchronizing commands
 ----------------------
 

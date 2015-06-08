@@ -51,7 +51,7 @@ Output: ::
 Synchronizing commands
 ----------------------
 
-Here is an example of how to synchronize tasks. Tt run two commands in
+Here is an example of how to synchronize tasks. To run two commands in
 parallel, then wait for them to finish an run a last command after that:
 
 .. code-block:: python

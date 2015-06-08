@@ -6,19 +6,16 @@
 Welcome to rcontrol's documentation!
 ====================================
 
-Contents:
+**rcontrol** is a python library to execute commands on remote hosts via
+ssh. It is built using *paramiko*, and unlike *fabric* it provide easy
+ways to crontrol the order of execution for parallelisation.
 
 .. toctree::
    :maxdepth: 2
 
    tutorial
+
+.. toctree::
+   :maxdepth: 3
+
    api
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-

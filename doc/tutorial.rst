@@ -3,8 +3,13 @@ Tutorial
 
 Learning guide for basic usage of **rcontrol**.
 
+
 Executing a command on a remote host
 ------------------------------------
+
+To execute a command, you first need to create a session. A session is
+usually used inside a **with** block, to ensure that all tasks will finish
+and that the connection will be closed at the end.
 
 .. code-block:: python
 
@@ -52,6 +57,7 @@ Output: ::
 
   :ref:`api-sessions`, :ref:`api-tasks`.
 
+
 Synchronizing commands
 ----------------------
 
@@ -69,11 +75,54 @@ parallel, then wait for them to finish an run a last command after that:
       task1 = session.execute("sleep 1; touch /tmp/rcontrol1.test")
       task2 = session.execute("sleep 1; touch /tmp/rcontrol2.test")
 
-      # now wait for them
+      # now wait for the commands to complete
       task1.wait()
       task2.wait()
+      # or session.wait_for_tasks()
 
       # and do something else
       session.execute("rm /tmp/rcontrol{1,2}.test")
       # no need to wait for this task, it will be done automatically
       # since we are in the with block
+
+
+Executing local commands
+------------------------
+
+Local commands can be executed in the same way as remote ones. Just use
+a :class:`rcontrol.local.LocalSession`:
+
+.. code-block:: python
+
+  from rcontrol.local import LocalSession
+
+  with LocalSession() as session:
+     session.execute("touch /tmp/stuff")
+
+
+Executing commands on multiple hosts
+------------------------------------
+
+It is recommended to use a session manager to work with multiple hosts at
+the same time:
+
+.. code-block:: python
+
+  from rcontrol.ssh import SshSession, ssh_client
+  from rcontrol.core import SessionManager
+
+  with SessionManager() as sessions:
+      # create sessions
+      sessions.bilbo = SshSession(
+          ssh_client('http://bilbo.domain.com', 'user', 'pwd'))
+      sessions.nazgul = SshSession(
+          ssh_client('http://nazgul.domain.com', 'user', 'pwd'))
+
+      # run commands in parallel
+      sessions.bilbo.execute("someLongCommand")
+      sessions.nazgul.execute("anotherCommand")
+
+      # wait for these commands to finish, then run a last one
+      sessions.wait_for_tasks()
+
+      sessions.nazgul.execute("echo 'Done !'")

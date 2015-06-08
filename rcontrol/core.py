@@ -182,16 +182,8 @@ class SessionManager(OrderedDict):
       # equivalent to:
       # sess_manager['local'] = LocalSession()
 
-    A session manager is useful because it has a close() method, that
-    will close each registered session. So you can do: ::
-
-      from contextlib import closing
-
-      with closing(SessionManager()) as sessions:
-          # do everything you want, sessions will be closed automatically
-          # after this with block
-
-    Note that this is required on python3, else python may hang.
+    It should be used inside a **with** block, to wait for pending
+    tasks and close sessions if needed automatically.
     """
 
     def __setattr__(self, name, value):
@@ -213,6 +205,9 @@ class SessionManager(OrderedDict):
             OrderedDict.__delattr__(self, name)
 
     def wait_for_tasks(self, raise_if_error=True):
+        """
+        Wait for the running tasks lauched from the sessions.
+        """
         errors = []
         for session in self.values():
             errs = session.wait_for_tasks(raise_if_error=False)
@@ -222,6 +217,9 @@ class SessionManager(OrderedDict):
         return errors
 
     def close(self):
+        """
+        close the sessions.
+        """
         for session in self.values():
             session.close()
 

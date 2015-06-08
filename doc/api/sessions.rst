@@ -37,3 +37,13 @@ LocalSession
 
 .. autoclass:: LocalSession
   :members:
+
+
+.. currentmodule:: rcontrol.core
+
+
+SessionManager
+--------------
+
+.. autoclass:: SessionManager
+  :members:

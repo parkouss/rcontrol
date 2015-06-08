@@ -333,6 +333,13 @@ class StreamReadersExec(Task):
             return ExitCodeError(self.session, self,
                                  'bad exit code: Got %s' % self.__exit_code)
 
+    def exit_code(self):
+        """
+        Return the exit code of the command, or None if the command is
+        not finished yet.
+        """
+        return self.__exit_code
+
     def wait(self, raise_if_error=True):
         """
         Block and wait until the command is finished or we got a timeout

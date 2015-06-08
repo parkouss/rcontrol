@@ -7,7 +7,7 @@ import abc
 
 
 class BaseTaskError(Exception):
-    """Raised on a task error"""
+    """Raised on a task error. All tasks errors inherit from this."""
 
 
 class TaskError(BaseTaskError):
@@ -20,7 +20,7 @@ class TaskError(BaseTaskError):
 
 
 class TimeoutError(TaskError):
-    """Raise on a timeout error"""
+    """Raise on a command timeout error"""
 
 
 class ExitCodeError(TaskError):
@@ -46,7 +46,7 @@ class Task(object):
     @abc.abstractmethod
     def error(self):
         """
-        Return an instance of Exception if any, else None.
+        Return an instance of a :class:`BaseTaskError` or None.
         """
         return None
 
@@ -390,15 +390,9 @@ class ThreadableTask(Task):
         self.thread = thread
 
     def is_running(self):
-        """
-        Return True if the thread is still running.
-        """
         return self.thread.is_alive()
 
     def error(self):
-        """
-        Return an instance of Exception if any, else None.
-        """
         return self.exception
 
     def wait(self, raise_if_error=True):

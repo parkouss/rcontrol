@@ -20,7 +20,7 @@ class ChannelReader(StreamsReader):
         return stdout_reader, stderr_reader
 
 
-class RemoteExec(CommandTask):
+class SshExec(CommandTask):
     """
     Execute a remote ssh command.
 
@@ -91,7 +91,7 @@ class SshSession(BaseSession):
         return self.sftp.open(filename, mode=mode, bufsize=bufsize)
 
     def execute(self, command, **kwargs):
-        return RemoteExec(self, command, **kwargs)
+        return SshExec(self, command, **kwargs)
 
     def close(self):
         self.ssh_client.close()

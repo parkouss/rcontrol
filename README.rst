@@ -14,7 +14,8 @@
 **rcontrol** is a python library based on **paramiko** intended to work
 with remote machines via ssh.
 
-Unlike **fabric**, it is intended to perform tasks in an asynchronous way.
+Unlike **fabric**, it is intended to perform tasks in an asynchronous way,
+and to work with python >= 2.7 (including **python 3**).
 
 Please note that this is under development! I am waiting for feedback,
 ideas and contributors to make this tool evolve.

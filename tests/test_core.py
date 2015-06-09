@@ -262,8 +262,31 @@ class TestCommandTask(unittest.TestCase):
     def test_on_timeout(self):
         data = []
         cmd = self.create_cmd(timeout_callback=data.append)
+        # task is registered in session
+        cmd.session._register_task.assert_called_once_with(cmd)
 
         self.assertFalse(cmd.timed_out())
         cmd._on_timeout()
         self.assertEqual(data, [cmd])
         self.assertTrue(cmd.timed_out())
+        # task is unregistered in session
+        cmd.session._unregister_task.assert_called_once_with(cmd)
+
+    def test_on_finished(self):
+        data = []
+        cmd = self.create_cmd(finished_callback=data.append)
+        # task is registered in session
+        cmd.session._register_task.assert_called_once_with(cmd)
+
+        cmd._on_finished()
+        self.assertEqual(data, [cmd])
+        # task is unregistered in session
+        cmd.session._unregister_task.assert_called_once_with(cmd)
+
+    def test_is_running(self):
+        cmd = self.create_cmd()
+        # test that just return the value of the reader.is_alive() call
+        class T: pass
+
+        cmd._reader.is_alive.return_value = T
+        self.assertEqual(cmd.is_running(), T)

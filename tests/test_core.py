@@ -285,8 +285,9 @@ class TestCommandTask(unittest.TestCase):
 
     def test_is_running(self):
         cmd = self.create_cmd()
-        # test that just return the value of the reader.is_alive() call
-        class T: pass
 
+        # test that just return the value of the reader.is_alive() call
+        class T:
+            pass
         cmd._reader.is_alive.return_value = T
         self.assertEqual(cmd.is_running(), T)

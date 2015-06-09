@@ -340,11 +340,10 @@ class CommandTask(Task):
         Actually check for a :class:`TimeoutError` or a
         :class:`ExitCodeError`.
         """
-        if self.is_running():
-            return None
         if self.__timed_out:
             return TimeoutError(self.session, self, "timeout")
-        if self.__expected_exit_code is not None and \
+        if self.__exit_code is not None and \
+                self.__expected_exit_code is not None and \
                 self.__exit_code != self.__expected_exit_code:
             return ExitCodeError(self.session, self,
                                  'bad exit code: Got %s' % self.__exit_code)

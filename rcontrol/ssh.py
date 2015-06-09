@@ -85,7 +85,7 @@ class SshSession(BaseSession):
     def __init__(self, client, auto_close=True):
         BaseSession.__init__(self, auto_close=auto_close)
         self.ssh_client = client
-        self.sftp = ssh_client.open_sftp()
+        self.sftp = client.open_sftp()
 
     def open(self, filename, mode='r', bufsize=-1):
         return self.sftp.open(filename, mode=mode, bufsize=bufsize)

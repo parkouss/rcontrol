@@ -1,4 +1,5 @@
 import unittest
+import time
 from mock import Mock
 
 from rcontrol import core
@@ -291,3 +292,73 @@ class TestCommandTask(unittest.TestCase):
             pass
         cmd._reader.is_alive.return_value = T
         self.assertEqual(cmd.is_running(), T)
+
+    def test_no_error(self):
+        cmd = self.create_cmd()
+        self.assertIsNone(cmd.error())
+
+    def test_error_timeout(self):
+        cmd = self.create_cmd()
+        cmd._on_timeout()
+        self.assertIsInstance(cmd.error(), core.TimeoutError)
+
+    def test_error_exit_code(self):
+        cmd = self.create_cmd()
+        # no error when exit code is 0
+        cmd._set_exit_code(0)
+        self.assertIsNone(cmd.error())
+        # ExitCodeError else
+        cmd._set_exit_code(1)
+        self.assertIsInstance(cmd.error(), core.ExitCodeError)
+
+    def test_no_error_if_no_expected_exit_code(self):
+        cmd = self.create_cmd(expected_exit_code=None)
+        cmd._set_exit_code(1)
+        self.assertIsNone(cmd.error())
+
+    def test_wait(self):
+        cmd = self.create_cmd()
+        cmd._set_exit_code(0)
+        self.assertEqual(cmd.wait(), 0)
+        cmd._reader.is_alive.assert_called_once_with()
+        cmd._reader.thread.join.assert_called_once_with()
+
+    def test_wait_with_error(self):
+        cmd = self.create_cmd()
+        cmd._on_timeout()
+        with self.assertRaises(core.TimeoutError):
+            cmd.wait()
+        # if raise_if_error is False, no exception thrown
+        cmd.wait(raise_if_error=False)
+
+
+class TestThreadableTask(unittest.TestCase):
+    def create_task(self, callable, args, kwargs, **kwds):
+        self.session = create_session()
+        return core.ThreadableTask(self.session, callable, args, kwargs,
+                                   **kwds)
+
+    def test_run_task(self):
+        func, finished = Mock(), Mock()
+        thread = self.create_task(func, (1,), dict(a=2),
+                                  finished_callback=finished)
+        # registered to session
+        self.session._register_task.assert_called_once_with(thread)
+
+        thread.wait()
+        self.assertFalse(thread.is_running())
+        self.assertIsNone(thread.error())
+        func.assert_called_once_with(1, a=2)
+        finished.assert_called_once_with(thread)
+
+        # unregistered
+        self.session._unregister_task.assert_called_once_with(thread)
+
+    def test_run_task_with_exception(self):
+        def cb():
+            time.sleep(0.02)
+            raise Exception()
+
+        thread = self.create_task(cb, (), {})
+        with self.assertRaises(Exception):
+            thread.wait()

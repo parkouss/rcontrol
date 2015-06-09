@@ -49,7 +49,6 @@ class Task(object):
         """
         Return an instance of a :class:`BaseTaskError` or None.
         """
-        return None
 
     def raise_if_error(self):
         """

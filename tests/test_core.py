@@ -230,3 +230,40 @@ class TestSessionManager(unittest.TestCase):
                     auto_close=True,
                 )
                 raise KeyboardInterrupt
+
+
+class TestCommandTask(unittest.TestCase):
+    def create_cmd(self, command="cmd", **kwargs):
+        session = create_session()
+        reader_class = Mock
+        return core.CommandTask(session, reader_class, command, **kwargs)
+
+    def test_exit_code(self):
+        cmd = self.create_cmd()
+        self.assertEqual(cmd.exit_code(), None)
+
+        cmd._set_exit_code(1)
+        self.assertEqual(cmd.exit_code(), 1)
+
+    def test_on_stdout(self):
+        data = []
+        cmd = self.create_cmd(stdout_callback=lambda s, l: data.append((s, l)))
+
+        cmd._on_stdout("line")
+        self.assertEqual(data, [(cmd, "line")])
+
+    def test_on_stderr(self):
+        data = []
+        cmd = self.create_cmd(stderr_callback=lambda s, l: data.append((s, l)))
+
+        cmd._on_stderr("line")
+        self.assertEqual(data, [(cmd, "line")])
+
+    def test_on_timeout(self):
+        data = []
+        cmd = self.create_cmd(timeout_callback=data.append)
+
+        self.assertFalse(cmd.timed_out())
+        cmd._on_timeout()
+        self.assertEqual(data, [cmd])
+        self.assertTrue(cmd.timed_out())

@@ -311,6 +311,7 @@ class CommandTask(Task):
             self.__stderr_callback(self, line)
 
     def _on_timeout(self):
+        self.session._unregister_task(self)
         self.__timed_out = True
         if self.__timeout_callback:
             self.__timeout_callback(self)

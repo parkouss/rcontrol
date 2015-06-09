@@ -263,12 +263,15 @@ class CommandTask(Task):
     :param command: the command to execute (a string)
     :param expected_exit_code: the expected exit code of the command. If
         None, there is no exit code expected.
+    :param combine_stderr: if None, stderr and stdout will be automatically
+        combined unless stderr_callback is defined. You can force to combine
+        stderr or stdout by passing True or False.
 
     Other params are passed to the :class:`streamreader.StreamsReader`
     constructor.
     """
     def __init__(self, session, reader_class, command, expected_exit_code=0,
-                 timeout=None, combine_stderr=None, output_timeout=None,
+                 combine_stderr=None, timeout=None, output_timeout=None,
                  finished_callback=None, timeout_callback=None,
                  stdout_callback=None, stderr_callback=None):
 

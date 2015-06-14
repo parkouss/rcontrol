@@ -51,8 +51,8 @@ class TaskErrors(BaseTaskError):
         BaseTaskError.__init__(self, '\n'.join(str(e) for e in self.errors))
 
 
+@six.add_metaclass(abc.ABCMeta)
 class Task(object):
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def is_running(self):
@@ -84,12 +84,11 @@ class Task(object):
         """
 
 
+@six.add_metaclass(abc.ABCMeta)
 class BaseSession(object):
     """
     Represent an abstraction of a session on a remote or local machine.
     """
-
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, auto_close=True):
         self._lock = threading.Lock()  # a lock for tasks access

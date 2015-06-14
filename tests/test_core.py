@@ -16,6 +16,7 @@
 import unittest
 import time
 import abc
+import six
 from mock import Mock
 
 from rcontrol import core
@@ -35,9 +36,9 @@ class ABCMetaAutoBaseSession(abc.ABCMeta):
                                                            namespace)
 
 
+@six.add_metaclass(ABCMetaAutoBaseSession)
 class TestableBaseSession(core.BaseSession):
     """An instanciable BaseSession for tests"""
-    __metaclass__ = ABCMetaAutoBaseSession
 
 
 def create_task(**kwargs):

@@ -15,9 +15,29 @@
 
 import unittest
 import time
+import abc
 from mock import Mock
 
 from rcontrol import core
+
+
+class ABCMetaAutoBaseSession(abc.ABCMeta):
+    """
+    Automatically create a BaseSession derived class with all
+    abstract methods implemented
+    """
+    def __new__(mcls, name, bases, namespace):
+        def _raise_if_called(self, *args, **kwargs):
+            raise NotImplementedError
+        for name in core.BaseSession.__abstractmethods__:
+            namespace[name] = _raise_if_called
+        return super(ABCMetaAutoBaseSession, mcls).__new__(mcls, name, bases,
+                                                           namespace)
+
+
+class TestableBaseSession(core.BaseSession):
+    """An instanciable BaseSession for tests"""
+    __metaclass__ = ABCMetaAutoBaseSession
 
 
 def create_task(**kwargs):
@@ -26,7 +46,7 @@ def create_task(**kwargs):
 
 class TestBaseSession(unittest.TestCase):
     def setUp(self):
-        self.session = core.BaseSession()
+        self.session = TestableBaseSession()
 
     def test_register_task(self):
         self.assertEquals(self.session.tasks(), [])
@@ -137,14 +157,14 @@ class TestSessionManager(unittest.TestCase):
         self.sessions = core.SessionManager()
 
     def test_set_attr(self):
-        session = core.BaseSession()
+        session = TestableBaseSession()
         self.sessions.local = session
         self.assertEqual(self.sessions, {'local': session})
         # test getattr
         self.assertEqual(session, self.sessions.local)
 
     def test_delattr(self):
-        self.sessions.local = core.BaseSession()
+        self.sessions.local = TestableBaseSession()
         del self.sessions.local
         self.assertEqual(self.sessions, {})
         with self.assertRaises(AttributeError):
@@ -163,7 +183,7 @@ class TestSessionManager(unittest.TestCase):
     def test_that_only_sessions_can_be_stored_in_dict(self):
         with self.assertRaises(TypeError):
             # must use a string as the key
-            self.sessions[1] = core.BaseSession()
+            self.sessions[1] = TestableBaseSession()
 
         with self.assertRaises(TypeError):
             # must use a BaseSession as the value
@@ -172,7 +192,7 @@ class TestSessionManager(unittest.TestCase):
         # nothing is stored in the dict
         self.assertEqual(self.sessions, {})
 
-        session = core.BaseSession()
+        session = TestableBaseSession()
         self.sessions['local'] = session
         self.assertEqual(self.sessions, {'local': session})
 

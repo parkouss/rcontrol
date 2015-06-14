@@ -89,6 +89,8 @@ class BaseSession(object):
     Represent an abstraction of a session on a remote or local machine.
     """
 
+    __metaclass__ = abc.ABCMeta
+
     def __init__(self, auto_close=True):
         self._lock = threading.Lock()  # a lock for tasks access
         self._tasks = []
@@ -127,6 +129,7 @@ class BaseSession(object):
             raise TaskErrors(errors)
         return errors
 
+    @abc.abstractmethod
     def open(self, filename, mode='r', bufsize=-1):
         """
         Return an opened file object.
@@ -135,8 +138,8 @@ class BaseSession(object):
         :param mode: the mode used to open the file
         :param bufsize: buffer size
         """
-        raise NotImplementedError
 
+    @abc.abstractmethod
     def execute(self, command, **kwargs):
         """
         Execute a command in an asynchronous way.
@@ -147,7 +150,6 @@ class BaseSession(object):
         :param kwargs: named arguments passed to the constructor of the
             class:`CommandTask` subclass.
         """
-        raise NotImplementedError
 
     def copy_file(self, src, dest_os, dest, chunk_size=16384):
         """

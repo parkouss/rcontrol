@@ -126,3 +126,35 @@ the same time:
       sessions.wait_for_tasks()
 
       sessions.nazgul.execute("echo 'Done !'")
+
+
+Copy files and directories between hosts
+----------------------------------------
+
+Here is an example that show how to copy files and directories accros computer.
+Note that you can use the :class:`rcontrol.local.LocalSession` to get or put
+files and directories locally.
+
+.. code-block:: python
+
+  from rcontrol.ssh import SshSession, ssh_client
+  from rcontrol.core import SessionManager
+
+  with SessionManager() as sessions:
+      # create sessions
+      sessions.bilbo = SshSession(
+          ssh_client('http://bilbo.domain.com', 'user', 'pwd'))
+      sessions.nazgul = SshSession(
+          ssh_client('http://nazgul.domain.com', 'user', 'pwd'))
+
+      # copy a file on nazgul, block until it is done
+      sessions.bilbo.s_copy_file('/tmp/stuff', sessions.nazgul, '/tmp/stuff')
+
+      # copy recursive dirs in a non blocking way (you can synchronize it just
+      # like commands)
+      # Note that the destination folder /tmp/dir on nazgul must not exists
+      sessions.bilbo.copy_dir('/home/my/dir', sessions.nazgul, '/tmp/dir')
+
+.. seealso::
+
+  :class:`rcontrol.core.BaseSession`

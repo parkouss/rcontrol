@@ -57,7 +57,7 @@ What **rcontrol** can do
 * attach callbacks when a line is read (stdout or stderr), on timeout and
   when the commands are finished
 
-* copy files and recursive directories from one host to another
+* copy files and directories from one host to another
 
 
 What **rcontrol** needs (contributors, you're welcome!)

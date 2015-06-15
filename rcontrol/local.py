@@ -15,6 +15,7 @@
 
 import subprocess
 import os
+import six
 
 from rcontrol.streamreader import StreamsReader
 from rcontrol.core import CommandTask, BaseSession
@@ -66,10 +67,14 @@ class LocalExec(CommandTask):
         CommandTask._on_finished(self)
 
 
+@six.python_2_unicode_compatible
 class LocalSession(BaseSession):
     """
     A session on the local machine.
     """
+    def __str__(self):
+        return "<LocalSession>"
+
     def open(self, filename, mode='r', bufsize=-1):
         return open(filename, mode=mode)
 

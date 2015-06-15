@@ -16,6 +16,7 @@
 import os
 import stat
 import paramiko
+import six
 
 from rcontrol.streamreader import StreamsReader
 from rcontrol.core import CommandTask, BaseSession
@@ -78,6 +79,11 @@ def ssh_client(host, username=None, password=None, **kwargs):
     defaults when using username/password to connect.
     """
     client = paramiko.SSHClient()
+    # save hostname and username on the instance - this is a ugly hack
+    # but I don't see any other way to do that for now. Note that
+    # this is only used for SshSession.__str__.
+    client.hostname = host
+    client.username = username
     if username is not None:
         kwargs['username'] = username
     if password is not None:
@@ -89,6 +95,7 @@ def ssh_client(host, username=None, password=None, **kwargs):
     return client
 
 
+@six.python_2_unicode_compatible
 class SshSession(BaseSession):
     """
     A specialized ssh session.
@@ -104,6 +111,16 @@ class SshSession(BaseSession):
         BaseSession.__init__(self, auto_close=auto_close)
         self.ssh_client = client
         self.sftp = client.open_sftp()
+
+    def __str__(self):
+        username = getattr(self.ssh_client, 'username', None)
+        hostname = getattr(self.ssh_client, 'hostname', None)
+
+        if username and hostname:
+            return "<SshSession %s@%s>" % (username, hostname)
+        elif hostname:
+            return "<SshSession %s>" % hostname
+        return BaseSession.__str__(self)
 
     def open(self, filename, mode='r', bufsize=-1):
         return self.sftp.open(filename, mode=mode, bufsize=bufsize)

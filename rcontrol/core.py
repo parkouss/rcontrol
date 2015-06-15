@@ -53,6 +53,8 @@ class TaskErrors(BaseTaskError):
 
 @six.add_metaclass(abc.ABCMeta)
 class Task(object):
+    def __init__(self):
+        self.explicit_wait = False
 
     @abc.abstractmethod
     def is_running(self):
@@ -75,6 +77,9 @@ class Task(object):
             raise error
 
     @abc.abstractmethod
+    def _wait(self, raise_if_error):
+        pass
+
     def wait(self, raise_if_error=True):
         """
         Block and wait until the task is finished.
@@ -82,6 +87,8 @@ class Task(object):
         :param raise_if_error: if True, call :meth:`raise_if_error` at
             the end.
         """
+        self.explicit_wait = True
+        return self._wait(raise_if_error=raise_if_error)
 
 
 def _async(meth, name):
@@ -103,8 +110,14 @@ class BaseSession(object):
     """
 
     def __init__(self, auto_close=True):
-        self._lock = threading.Lock()  # a lock for tasks access
+        # a lock for tasks and silent errors access
+        self._lock = threading.Lock()
         self._tasks = []
+        # silent errors are errors from tasks that are not waited
+        # explicitly. As a task is unregistered from the session once
+        # it is finished, we save in this list the errors of tasks
+        # that are finished before wait_for_tasks is called.
+        self._silent_errors = []
         self.auto_close = auto_close
 
     def _register_task(self, task):
@@ -118,6 +131,11 @@ class BaseSession(object):
                 self._tasks.remove(task)
             except ValueError:
                 pass  # this should not happen
+            # keep silent error
+            if not task.explicit_wait:
+                error = task.error()
+                if error:
+                    self._silent_errors.append(error)
 
     def tasks(self):
         """
@@ -130,12 +148,18 @@ class BaseSession(object):
         """
         Wait for the running tasks lauched from this session.
         """
-        errors = []
-        for task in self.tasks():
+        with self._lock:
+            # bring back to life silent errors
+            errors = self._silent_errors[:]
+            tasks = self._tasks[:]
+        for task in tasks:
             task.wait(raise_if_error=False)
             error = task.error()
             if error:
                 errors.append(error)
+        with self._lock:
+            # now clean the silent errors
+            self._silent_errors = []
         if raise_if_error and errors:
             raise TaskErrors(errors)
         return errors
@@ -343,6 +367,7 @@ class CommandTask(Task):
                  combine_stderr=None, timeout=None, output_timeout=None,
                  finished_callback=None, timeout_callback=None,
                  stdout_callback=None, stderr_callback=None):
+        Task.__init__(self)
 
         self.session = session
         self.session._register_task(self)
@@ -424,14 +449,7 @@ class CommandTask(Task):
         """
         return self.__exit_code
 
-    def wait(self, raise_if_error=True):
-        """
-        Block and wait until the command is finished or we got a timeout
-        error.
-
-        :param raise_if_error: if True, call :meth:`raise_if_error` at
-            the end.
-        """
+    def _wait(self, raise_if_error):
         if self._reader.is_alive():
             self._reader.thread.join()
         if raise_if_error:
@@ -445,6 +463,7 @@ class ThreadableTask(Task):
     """
     def __init__(self, session, callable, args, kwargs,
                  finished_callback=None):
+        Task.__init__(self)
         # Set up exception handling
         self.exception = None
         session._register_task(self)
@@ -473,13 +492,7 @@ class ThreadableTask(Task):
     def error(self):
         return self.exception
 
-    def wait(self, raise_if_error=True):
-        """
-        Block and wait until the thread is finished.
-
-        :param raise_if_error: if True, call :meth:`raise_if_error` at
-            the end.
-        """
+    def _wait(self, raise_if_error):
         if self.thread.is_alive():
             self.thread.join()
         if raise_if_error:

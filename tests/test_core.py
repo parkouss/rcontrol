@@ -42,7 +42,7 @@ class TestableBaseSession(core.BaseSession):
 
 
 def create_task(**kwargs):
-    return Mock(spec=core.Task, **kwargs)
+    return Mock(spec=core.Task, explicit_wait=False, **kwargs)
 
 
 class TestBaseSession(unittest.TestCase):

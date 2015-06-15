@@ -107,6 +107,10 @@ def _async(meth, name):
 class BaseSession(object):
     """
     Represent an abstraction of a session on a remote or local machine.
+
+    Note that you should not use a session instance from multiple threads. For
+    example, running commands and calling :meth:`wait_for_tasks` in parallel
+    will have an undefined behaviour.
     """
 
     def __init__(self, auto_close=True):
@@ -146,7 +150,19 @@ class BaseSession(object):
 
     def wait_for_tasks(self, raise_if_error=True):
         """
-        Wait for the running tasks lauched from this session.
+        Wait for the running tasks launched from this session.
+
+        If any errors are encountered, they are raised or returned depending
+        on **raise_if_error**. Note that this contains errors reported from
+        silently finished tasks (tasks ran and finished in backround without
+        explicit wait call on them).
+
+        This is not required to call this method explictly if you use the
+        :class:`BaseSession` or the :class:`SessionManager` with the **with**
+        keyword.
+
+        :param raise_if_error: If True, errors are raised using
+            :class:`TaskErrors`. Else the errors are returned as a list.
         """
         with self._lock:
             # bring back to life silent errors
@@ -189,7 +205,7 @@ class BaseSession(object):
     @abc.abstractmethod
     def walk(self, top, topdown=True, onerror=None, followlinks=False):
         """
-        Walk file system. Equivalent to os.walk.
+        Walk the file system. Equivalent to os.walk.
         """
 
     @abc.abstractmethod
@@ -359,9 +375,21 @@ class CommandTask(Task):
     :param combine_stderr: if None, stderr and stdout will be automatically
         combined unless stderr_callback is defined. You can force to combine
         stderr or stdout by passing True or False.
-
-    Other params are passed to the :class:`streamreader.StreamsReader`
-    constructor.
+    :param timeout: timeout in seconds for the task. If None, no timeout is
+        set - else timeout_callback is called if the command has not finished
+        in time.
+    :param output_timeout: timeout in seconds for waiting output. If None, no
+        timeout is set - else timeout_callback is called if there is no output
+        in time.
+    :param finished_callback: a callable that takes one parameter, the command
+        task instance. Called when the command is finished, but not on timeout.
+    :param timeout_callback: a callable that takes one parameter, the command
+        task instance. Called on timeout.
+    :param stdout_callback: a callable that takes two parameter, the command
+        task instance and the line read. Called on line read from stdout and
+        possibly from stderr if streams are combined..
+    :param stderr_callback: a callable that takes two parameter, the command
+        task instance and the line read. Called on line read from stderr.
     """
     def __init__(self, session, reader_class, command, expected_exit_code=0,
                  combine_stderr=None, timeout=None, output_timeout=None,

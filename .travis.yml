@@ -15,4 +15,4 @@ script:
     - coverage run setup.py test
 
 after_success:
-    - coveralls
+    - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coveralls; fi

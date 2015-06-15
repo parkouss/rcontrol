@@ -13,7 +13,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with rcontrol. If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import stat
 import paramiko
+
 from rcontrol.streamreader import StreamsReader
 from rcontrol.core import CommandTask, BaseSession
 
@@ -110,3 +113,51 @@ class SshSession(BaseSession):
 
     def close(self):
         self.ssh_client.close()
+
+    def isdir(self, path):
+        try:
+            return stat.S_ISDIR(self.sftp.stat(path).st_mode)
+        except IOError:
+            return False
+
+    def islink(self, path):
+        try:
+            return stat.S_ISLNK(self.sftp.lstat(path).st_mode)
+        except IOError:
+            return False
+
+    def exists(self, path):
+        try:
+            self.ftp.lstat(path).st_mode
+        except IOError:
+            return False
+        return True
+
+    def mkdir(self, path):
+        self.sftp.mkdir(path)
+
+    def walk(self, top, topdown=True, onerror=None, followlinks=False):
+        try:
+            names = self.sftp.listdir(top)
+        except Exception as err:
+            if onerror is not None:
+                onerror(err)
+            return
+
+        dirs, nondirs = [], []
+        for name in names:
+            if self.isdir(os.path.join(top, name)):
+                dirs.append(name)
+            else:
+                nondirs.append(name)
+
+        if topdown:
+            yield top, dirs, nondirs
+
+        for name in dirs:
+            path = os.path.join(top, name)
+            if followlinks or not self.islink(path):
+                for x in self.walk(path, topdown, onerror, followlinks):
+                    yield x
+        if not topdown:
+            yield top, dirs, nondirs

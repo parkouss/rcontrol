@@ -150,6 +150,36 @@ class BaseSession(object):
             class:`CommandTask` subclass.
         """
 
+    @abc.abstractmethod
+    def walk(self, top, topdown=True, onerror=None, followlinks=False):
+        """
+        Walk file system. Equivalent to os.walk.
+        """
+
+    @abc.abstractmethod
+    def mkdir(self, path):
+        """
+        Create a directory. Equivalent to os.mkdir.
+        """
+
+    @abc.abstractmethod
+    def exists(self, path):
+        """
+        Return True if the path exists. Equivalent to os.path.exists.
+        """
+
+    @abc.abstractmethod
+    def isdir(self, path):
+        """
+        Return True if the path is a directory. Equivalent to os.path.isdir.
+        """
+
+    @abc.abstractmethod
+    def islink(self, path):
+        """
+        Return True if the path is a link. Equivalent to os.path.islink.
+        """
+
     def copy_file(self, src, dest_os, dest, chunk_size=16384):
         """
         Copy a file from this session to another session.
@@ -165,6 +195,22 @@ class BaseSession(object):
                               (self, src, dest_os, dest),
                               dict(chunk_size=chunk_size))
         return task
+
+    def copy_dir(self, src, dest_session, dest, chunk_size=16384):
+        """
+        Recursively copy a directory from a session to another one.
+
+        **dest** must not exist, it will be created automatically. This
+        method returns an instance of a :class:`ThreadableTask`.
+
+        :param src: path of the dir to copy in this session
+        :param dest_session: session to copy to
+        :param dest: path of the dir to copy in the dest session (must
+            not exists)
+        """
+        return ThreadableTask(self, fs.copy_dir,
+                              (self, src, dest_session, dest),
+                              dict(chunk_size=chunk_size))
 
     def close(self):
         """

@@ -14,6 +14,7 @@
 # along with rcontrol. If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
+import os
 
 from rcontrol.streamreader import StreamsReader
 from rcontrol.core import CommandTask, BaseSession
@@ -74,3 +75,18 @@ class LocalSession(BaseSession):
 
     def execute(self, command, **kwargs):
         return LocalExec(self, command, **kwargs)
+
+    def walk(self, top, topdown=True, onerror=None, followlinks=False):
+        os.walk(top, topdown=topdown, onerror=onerror, followlinks=followlinks)
+
+    def mkdir(self, path):
+        os.mkdir(path)
+
+    def exists(self, path):
+        return os.path.exists(path)
+
+    def islink(self, path):
+        return os.path.islink(path)
+
+    def isdir(self, path):
+        return os.path.isdir(path)

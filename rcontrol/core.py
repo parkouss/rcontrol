@@ -84,6 +84,18 @@ class Task(object):
         """
 
 
+def _async(meth, name):
+    def new_meth(self, *args, **kwargs):
+        return ThreadableTask(self, meth, (self,) + args, kwargs)
+    new_meth.__name__ = name
+    new_meth.__doc__ = """
+    Asynchronous version of :meth:`%s`.
+
+    This method returns an instance of a :class:`ThreadableTask`.
+""" % meth.__name__
+    return new_meth
+
+
 @six.add_metaclass(abc.ABCMeta)
 class BaseSession(object):
     """
@@ -180,37 +192,32 @@ class BaseSession(object):
         Return True if the path is a link. Equivalent to os.path.islink.
         """
 
-    def copy_file(self, src, dest_os, dest, chunk_size=16384):
+    def s_copy_file(self, src, dest_os, dest, chunk_size=16384):
         """
         Copy a file from this session to another session.
-
-        This is done in an asynchronous way and return an instance of
-        :class:`ThreadableTask`.
 
         :param src: full path of the file to copy in this session
         :param dest_os: session to copy to
         :param dest: full path of the file to copy in the dest session
         """
-        task = ThreadableTask(self, fs.copy_file,
-                              (self, src, dest_os, dest),
-                              dict(chunk_size=chunk_size))
-        return task
+        fs.copy_file(self, src, dest_os, dest, chunk_size=chunk_size)
 
-    def copy_dir(self, src, dest_session, dest, chunk_size=16384):
+    copy_file = _async(s_copy_file, "copy_file")
+
+    def s_copy_dir(self, src, dest_session, dest, chunk_size=16384):
         """
         Recursively copy a directory from a session to another one.
 
-        **dest** must not exist, it will be created automatically. This
-        method returns an instance of a :class:`ThreadableTask`.
+        **dest** must not exist, it will be created automatically.
 
         :param src: path of the dir to copy in this session
         :param dest_session: session to copy to
         :param dest: path of the dir to copy in the dest session (must
             not exists)
         """
-        return ThreadableTask(self, fs.copy_dir,
-                              (self, src, dest_session, dest),
-                              dict(chunk_size=chunk_size))
+        fs.copy_dir(self, src, dest_session, dest, chunk_size=chunk_size)
+
+    copy_dir = _async(s_copy_dir, "copy_dir")
 
     def close(self):
         """

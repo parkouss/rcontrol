@@ -445,7 +445,7 @@ class ThreadableTask(Task):
         def wrapper(*args, **kwargs):
             try:
                 callable(*args, **kwargs)
-            except BaseException:
+            except Exception:
                 self.exception = TaskError(session, self, sys.exc_info()[1])
             finally:
                 session._unregister_task(self)

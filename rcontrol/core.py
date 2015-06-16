@@ -187,8 +187,7 @@ class BaseSession(object):
             with self._lock:
                 # bring back to life silent errors
                 errors.extend(self._silent_errors)
-                tasks = set(self._tasks)
-            tasks = tasks - tasks_seen
+                tasks = [t for t in self._tasks if t not in tasks_seen]
             if not tasks:
                 with self._lock:
                     # now clean the silent errors

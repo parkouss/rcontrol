@@ -76,3 +76,9 @@ How to install
 Use pip. ::
 
   pip install -U rcontrol
+
+
+Changelog
+=========
+
+See the CHANGELOG.rst file.

@@ -1,9 +1,13 @@
 Development version
 ===================
 
+0.1.3 / 2015-06-16
+==================
+
  - finished_callback, timeout_callback, stdout_callback and stderr_callback
    from command parameters are renamed to on_finished, on_timeout,
-   on_stdout, on_stderr
+   on_stdout, on_stderr. Old names are still working for compatibility,
+   they will be removed later - runtime warnings are issued for that.
  - session.wait_for_tasks now wait for tasks that are started from other
    tasks callbacks
 

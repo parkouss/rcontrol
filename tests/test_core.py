@@ -148,6 +148,30 @@ class TestBaseSession(unittest.TestCase):
         # close has been called
         self.session.close.assert_called_once_with()
 
+    def test_task_ran_on_finished_is_waited(self):
+        tasks = []
+
+        def _create_task(**a):
+            if len(tasks) == 3:
+                return
+            task = create_task(error=Mock(return_value=None))
+            self.session._register_task(task)
+            tasks.append(task)
+            return task
+        task = _create_task()
+        task.wait.side_effect = _create_task
+
+        self.session.close = _create_task()
+
+        with self.session as s:
+            self.assertEquals(self.session, s)
+        # tasks are finished
+        self.assertEquals(len(tasks), 3)
+        for task in tasks:
+            task.wait.assert_called_once_with(raise_if_error=False)
+        # close has been called
+        self.session.close.assert_called_once_with()
+
 
 def create_session(**kwargs):
     return Mock(spec=core.BaseSession, **kwargs)

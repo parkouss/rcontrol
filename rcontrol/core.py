@@ -166,6 +166,9 @@ class BaseSession(object):
         silently finished tasks (tasks ran and finished in backround without
         explicit wait call on them).
 
+        Tasks started from another task callback (like finished_callback)
+        are also waited here.
+
         This is not required to call this method explictly if you use the
         :class:`BaseSession` or the :class:`SessionManager` with the **with**
         keyword.
@@ -173,18 +176,32 @@ class BaseSession(object):
         :param raise_if_error: If True, errors are raised using
             :class:`TaskErrors`. Else the errors are returned as a list.
         """
-        with self._lock:
-            # bring back to life silent errors
-            errors = self._silent_errors[:]
-            tasks = self._tasks[:]
-        for task in tasks:
-            task.wait(raise_if_error=False)
-            error = task.error()
-            if error:
-                errors.append(error)
-        with self._lock:
-            # now clean the silent errors
-            self._silent_errors = []
+        errors = []
+        # in case tasks do not unregister themselves we do not want to
+        # loop infinitely
+        tasks_seen = set()
+        # we do a while loop to ensure that tasks started from callbacks
+        # are waited too.
+        while True:
+            with self._lock:
+                # bring back to life silent errors
+                errors.extend(self._silent_errors)
+                tasks = set(self._tasks)
+            tasks = tasks - tasks_seen
+            if not tasks:
+                with self._lock:
+                    # now clean the silent errors
+                    self._silent_errors = []
+                break
+            for task in tasks:
+                task.wait(raise_if_error=False)
+                error = task.error()
+                if error:
+                    errors.append(error)
+            with self._lock:
+                # now clean the silent errors
+                self._silent_errors = []
+            tasks_seen.update(tasks)
         if raise_if_error and errors:
             raise TaskErrors(errors)
         return errors

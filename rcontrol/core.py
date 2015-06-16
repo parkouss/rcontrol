@@ -53,8 +53,17 @@ class TaskErrors(BaseTaskError):
 
 @six.add_metaclass(abc.ABCMeta)
 class Task(object):
-    def __init__(self):
+    def __init__(self, session):
+        self.session = session
         self.explicit_wait = False
+        # register the task instance to the session
+        session._register_task(self)
+
+    def _unregister(self):
+        # this must be called by subclasses when the task needs to be
+        # unregistered from the session. This is called from a thread,
+        # when the task is finished (or for a timeout)
+        self.session._unregister_task(self)
 
     @abc.abstractmethod
     def is_running(self):
@@ -395,10 +404,7 @@ class CommandTask(Task):
                  combine_stderr=None, timeout=None, output_timeout=None,
                  finished_callback=None, timeout_callback=None,
                  stdout_callback=None, stderr_callback=None):
-        Task.__init__(self)
-
-        self.session = session
-        self.session._register_task(self)
+        Task.__init__(self, session)
 
         if combine_stderr is None:
             combine_stderr = not stderr_callback
@@ -433,13 +439,13 @@ class CommandTask(Task):
             self.__stderr_callback(self, line)
 
     def _on_timeout(self):
-        self.session._unregister_task(self)
+        self._unregister()
         self.__timed_out = True
         if self.__timeout_callback:
             self.__timeout_callback(self)
 
     def _on_finished(self):
-        self.session._unregister_task(self)
+        self._unregister()
         if self.__finished_callback:
             self.__finished_callback(self)
 
@@ -491,10 +497,9 @@ class ThreadableTask(Task):
     """
     def __init__(self, session, callable, args, kwargs,
                  finished_callback=None):
-        Task.__init__(self)
+        Task.__init__(self, session)
         # Set up exception handling
         self.exception = None
-        session._register_task(self)
 
         def wrapper(*args, **kwargs):
             try:
@@ -502,7 +507,7 @@ class ThreadableTask(Task):
             except Exception:
                 self.exception = TaskError(session, self, sys.exc_info()[1])
             finally:
-                session._unregister_task(self)
+                self._unregister()
                 if finished_callback:
                     finished_callback(self)
 

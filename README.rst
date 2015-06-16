@@ -38,8 +38,8 @@ Basic example:
           ssh_client('http://nazgul.domain.com', 'user', 'pwd'))
 
       # run commands in parallel
-      sessions.bilbo.execute("uname -a && sleep 3", stdout_callback=log)
-      sessions.nazgul.execute("uname -a && sleep 3", stdout_callback=log)
+      sessions.bilbo.execute("uname -a && sleep 3", on_stdout=log)
+      sessions.nazgul.execute("uname -a && sleep 3", on_stdout=log)
 
 This example just show you how **rcontrol** looks like. Look at the
 documentation on http://rcontrol.readthedocs.org/en/latest/ if you're

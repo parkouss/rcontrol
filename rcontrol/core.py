@@ -21,6 +21,7 @@ import six
 from collections import OrderedDict
 from rcontrol import fs
 import abc
+import warnings
 
 
 class BaseTaskError(Exception):
@@ -166,7 +167,7 @@ class BaseSession(object):
         silently finished tasks (tasks ran and finished in backround without
         explicit wait call on them).
 
-        Tasks started from another task callback (like finished_callback)
+        Tasks started from another task callback (like on_finished)
         are also waited here.
 
         This is not required to call this method explictly if you use the
@@ -407,18 +408,21 @@ class CommandTask(Task):
     :param output_timeout: timeout in seconds for waiting output. If None, no
         timeout is set - else timeout_callback is called if there is no output
         in time.
-    :param finished_callback: a callable that takes one parameter, the command
+    :param on_finished: a callable that takes one parameter, the command
         task instance. Called when the command is finished, but not on timeout.
-    :param timeout_callback: a callable that takes one parameter, the command
+    :param on_timeout: a callable that takes one parameter, the command
         task instance. Called on timeout.
-    :param stdout_callback: a callable that takes two parameter, the command
+    :param on_stdout: a callable that takes two parameter, the command
         task instance and the line read. Called on line read from stdout and
         possibly from stderr if streams are combined..
-    :param stderr_callback: a callable that takes two parameter, the command
+    :param on_stderr: a callable that takes two parameter, the command
         task instance and the line read. Called on line read from stderr.
     """
     def __init__(self, session, reader_class, command, expected_exit_code=0,
                  combine_stderr=None, timeout=None, output_timeout=None,
+                 on_finished=None, on_timeout=None, on_stdout=None,
+                 on_stderr=None,
+                 # deprecated aliases
                  finished_callback=None, timeout_callback=None,
                  stdout_callback=None, stderr_callback=None):
         Task.__init__(self, session)
@@ -430,10 +434,29 @@ class CommandTask(Task):
         self.__exit_code = None
         self.__expected_exit_code = expected_exit_code
         self.__timed_out = False
-        self.__finished_callback = finished_callback
-        self.__timeout_callback = timeout_callback
-        self.__stdout_callback = stdout_callback
-        self.__stderr_callback = stderr_callback
+
+        def _warn(name):
+            msg = ("You should use on_%s instead of %s_callback"
+                   " in new code (it will be removed soon)") % (name, name)
+            warnings.warn(msg)
+
+        if finished_callback:
+            _warn("finished")
+            on_finished = finished_callback
+        if timeout_callback:
+            _warn("timeout")
+            on_timeout = timeout_callback
+        if stdout_callback:
+            _warn("stdout")
+            on_stdout = stdout_callback
+        if stderr_callback:
+            _warn("stderr")
+            on_stderr = stderr_callback
+
+        self.__finished_callback = on_finished
+        self.__timeout_callback = on_timeout
+        self.__stdout_callback = on_stdout
+        self.__stderr_callback = on_stderr
 
         self._reader = reader_class(
             stdout_callback=self._on_stdout,

@@ -43,8 +43,7 @@ because there is no handler defined for the command output:
   conn = ssh_client('localhost', 'jp', 'jp')
 
   with SshSession(conn) as session:
-      session.execute("uname -a", stdout_callback=on_output,
-                      finished_callback=on_finished)
+      session.execute("uname -a", on_stdout=on_output, on_finished=on_finished)
 
 
 Output: ::

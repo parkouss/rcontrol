@@ -113,6 +113,17 @@ def _async(meth, name):
     return new_meth
 
 
+class TaskCache(object):
+    def __init__(self):
+        self._cache = set()
+
+    def update(self, tasks):
+        self._cache.update(id(t) for t in tasks)
+
+    def __contains__(self, task):
+        return id(task) in self._cache
+
+
 @six.add_metaclass(abc.ABCMeta)
 class BaseSession(object):
     """
@@ -180,7 +191,7 @@ class BaseSession(object):
         errors = []
         # in case tasks do not unregister themselves we do not want to
         # loop infinitely
-        tasks_seen = set()
+        tasks_seen = TaskCache()
         # we do a while loop to ensure that tasks started from callbacks
         # are waited too.
         while True:

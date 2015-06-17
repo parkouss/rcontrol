@@ -223,9 +223,13 @@ class TestSessionManager(unittest.TestCase):
 
     def test_wait_for_tasks(self):
         self.sessions.s1 = create_session(
-            wait_for_tasks=Mock(return_value=[]))
+            wait_for_tasks=Mock(return_value=[]),
+            tasks=Mock(return_value=[]),
+        )
         self.sessions.s2 = create_session(
-            wait_for_tasks=Mock(return_value=[]))
+            wait_for_tasks=Mock(return_value=[]),
+            tasks=Mock(return_value=[]),
+        )
 
         self.assertEqual(self.sessions.wait_for_tasks(), [])
         self.sessions.s1.wait_for_tasks.assert_called_with(
@@ -236,9 +240,13 @@ class TestSessionManager(unittest.TestCase):
     def test_wait_for_tasks_with_tasks_errors(self):
         exc1, exc2 = Exception(), Exception()
         self.sessions.s1 = create_session(
-            wait_for_tasks=Mock(return_value=[exc1]))
+            wait_for_tasks=Mock(return_value=[exc1]),
+            tasks=Mock(return_value=[]),
+        )
         self.sessions.s2 = create_session(
-            wait_for_tasks=Mock(return_value=[exc2]))
+            wait_for_tasks=Mock(return_value=[exc2]),
+            tasks=Mock(return_value=[]),
+        )
 
         # by default, this raise an exception
         with self.assertRaises(core.TaskErrors) as cm:
@@ -278,6 +286,7 @@ class TestSessionManager(unittest.TestCase):
                 s.s1 = create_session(
                     wait_for_tasks=Mock(return_value=[exc1]),
                     auto_close=True,
+                    tasks=Mock(return_value=[]),
                 )
 
     def test_inside_with_with_errors(self):
@@ -289,6 +298,7 @@ class TestSessionManager(unittest.TestCase):
                 s.s1 = create_session(
                     wait_for_tasks=Mock(return_value=[exc1]),
                     auto_close=True,
+                    tasks=Mock(return_value=[]),
                 )
                 raise KeyboardInterrupt
 

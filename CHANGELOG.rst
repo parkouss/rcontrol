@@ -1,6 +1,9 @@
 Development version
 ===================
 
+ - sessionmanager.wait_for_tasks now wait for tasks that are started from
+   other tasks callbacks from different sessions.
+
 0.1.3 / 2015-06-16
 ==================
 

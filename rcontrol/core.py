@@ -61,7 +61,8 @@ class Task(object):
         accessible via the **session** attribute on the instance.
     :param on_done: if not None, should be a callback that takes the
         instance task as the parameter. It is called when the task is
-        done (finished or timed out).
+        done (finished or timed out). If defined, :meth:`error_handled`
+        will return True.
     """
     def __init__(self, session, on_done=None):
         self.session = session
@@ -77,6 +78,16 @@ class Task(object):
         self.session._unregister_task(self)
         if self.__on_done:
             self.__on_done(self)
+
+    def error_handled(self):
+        """
+        Return True if the error must **not** be reported while using
+        :meth:`BaseSession.wait_for_tasks`.
+
+        By default, the error is handled if **on_done** was specified
+        in the constructor.
+        """
+        return bool(self.__on_done)
 
     @abc.abstractmethod
     def is_running(self):
@@ -171,7 +182,7 @@ class BaseSession(object):
             except ValueError:
                 pass  # this should not happen
             # keep silent error
-            if not task.explicit_wait:
+            if not task.error_handled() and not task.explicit_wait:
                 error = task.error()
                 if error:
                     self._silent_errors.append(error)
@@ -220,9 +231,10 @@ class BaseSession(object):
                 break
             for task in tasks:
                 task.wait(raise_if_error=False)
-                error = task.error()
-                if error:
-                    errors.append(error)
+                if not task.error_handled():
+                    error = task.error()
+                    if error:
+                        errors.append(error)
             with self._lock:
                 # now clean the silent errors
                 self._silent_errors = []

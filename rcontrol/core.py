@@ -115,12 +115,18 @@ class Task(object):
 
 def _async(meth, name):
     def new_meth(self, *args, **kwargs):
-        return ThreadableTask(self, meth, (self,) + args, kwargs)
+        on_done = kwargs.pop('on_done', None)
+        return ThreadableTask(self, meth, (self,) + args, kwargs,
+                              on_done=on_done)
     new_meth.__name__ = name
     new_meth.__doc__ = """
     Asynchronous version of :meth:`%s`.
 
     This method returns an instance of a :class:`ThreadableTask`.
+
+    Note that you can use the **on_done** keyword argument to define a
+    callback that will be called at the end of the execution (see
+    the :class:`Task` constructor).
 """ % meth.__name__
     return new_meth
 

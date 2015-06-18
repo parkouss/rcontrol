@@ -1,6 +1,8 @@
 Development version
 ===================
 
+ - add on_done keyword argument to specify a callback on all tasks
+   (including the ThreadableTasks like fs operations).
  - sessionmanager.wait_for_tasks now wait for tasks that are started from
    other tasks callbacks from different sessions.
 

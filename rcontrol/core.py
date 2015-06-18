@@ -128,10 +128,6 @@ class TaskCache(object):
 class BaseSession(object):
     """
     Represent an abstraction of a session on a remote or local machine.
-
-    Note that you should not use a session instance from multiple threads. For
-    example, running commands and calling :meth:`wait_for_tasks` in parallel
-    will have an undefined behaviour.
     """
 
     def __init__(self, auto_close=True):

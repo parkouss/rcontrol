@@ -1,0 +1,15 @@
+digraph graphname {
+    BEGIN -> "atlas2:T1";
+    BEGIN -> "bilbo:T2";
+    BEGIN -> "nazgul:T3";
+    "atlas2:T1" -> "atlas2:T11";
+    "atlas2:T1" -> "atlas2:T12";
+    "atlas2:T11" -> "bilbo:T4";
+    "atlas2:T12" -> "bilbo:T4";
+    "bilbo:T2" -> "bilbo:T4";
+    "bilbo:T4" -> "atlas2:T5";
+    "nazgul:T3" -> "atlas2:T5";
+    "atlas2:T5" -> END;
+
+    { rank=same; "atlas2:T1" "bilbo:T2" "nazgul:T3" }
+}

@@ -54,8 +54,18 @@ class TaskErrors(BaseTaskError):
 
 @six.add_metaclass(abc.ABCMeta)
 class Task(object):
-    def __init__(self, session):
+    """
+    Represent an asynchronous task.
+
+    :param session: the session that is responsible of the task. It it
+        accessible via the **session** attribute on the instance.
+    :param on_done: if not None, should be a callback that takes the
+        instance task as the parameter. It is called when the task is
+        done (finished or timed out).
+    """
+    def __init__(self, session, on_done=None):
         self.session = session
+        self.__on_done = on_done
         self.explicit_wait = False
         # register the task instance to the session
         session._register_task(self)
@@ -65,6 +75,8 @@ class Task(object):
         # unregistered from the session. This is called from a thread,
         # when the task is finished (or for a timeout)
         self.session._unregister_task(self)
+        if self.__on_done:
+            self.__on_done(self)
 
     @abc.abstractmethod
     def is_running(self):
@@ -444,11 +456,11 @@ class CommandTask(Task):
     def __init__(self, session, reader_class, command, expected_exit_code=0,
                  combine_stderr=None, timeout=None, output_timeout=None,
                  on_finished=None, on_timeout=None, on_stdout=None,
-                 on_stderr=None,
+                 on_stderr=None, on_done=None,
                  # deprecated aliases
                  finished_callback=None, timeout_callback=None,
                  stdout_callback=None, stderr_callback=None):
-        Task.__init__(self, session)
+        Task.__init__(self, session, on_done=on_done)
 
         if combine_stderr is None:
             combine_stderr = not stderr_callback
@@ -502,8 +514,8 @@ class CommandTask(Task):
             self.__stderr_callback(self, line)
 
     def _on_timeout(self):
-        self._unregister()
         self.__timed_out = True
+        self._unregister()
         if self.__timeout_callback:
             self.__timeout_callback(self)
 
@@ -559,8 +571,8 @@ class ThreadableTask(Task):
     A task ran in a background thread.
     """
     def __init__(self, session, callable, args, kwargs,
-                 finished_callback=None):
-        Task.__init__(self, session)
+                 on_done=None):
+        Task.__init__(self, session, on_done=on_done)
         # Set up exception handling
         self.exception = None
 
@@ -571,8 +583,6 @@ class ThreadableTask(Task):
                 self.exception = TaskError(session, self, sys.exc_info()[1])
             finally:
                 self._unregister()
-                if finished_callback:
-                    finished_callback(self)
 
         # Kick off thread
         name = getattr(callable, '__name__', None)

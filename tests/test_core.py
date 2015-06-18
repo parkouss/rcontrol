@@ -410,8 +410,7 @@ class TestThreadableTask(unittest.TestCase):
 
     def test_run_task(self):
         func, finished = Mock(), Mock()
-        thread = self.create_task(func, (1,), dict(a=2),
-                                  finished_callback=finished)
+        thread = self.create_task(func, (1,), dict(a=2), on_done=finished)
         # registered to session
         self.session._register_task.assert_called_once_with(thread)
 
